@@ -1,0 +1,80 @@
+# 환경 변수 및 설정 파일
+.env
+.env.*
+config.json
+*.config
+
+# Python 관련 파일
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 가상 환경
+venv/
+ENV/
+env/
+.venv/
+.ENV/
+.env/
+
+# IDE 관련 파일
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+.project
+.pydevproject
+.settings/
+
+# 로그 파일
+*.log
+logs/
+log/
+
+# 데이터베이스 파일
+*.db
+*.sqlite
+*.sqlite3
+
+# 빌드 결과물
+dist/
+build/
+*.exe
+*.spec
+
+# 예외 처리: 특정 파일은 포함
+!dist/queries.sql
+!main.spec
+!build_exe.bat
+
+# 테스트 관련 파일
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# 기타
+.DS_Store
+Thumbs.db 

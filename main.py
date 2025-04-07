@@ -8,7 +8,7 @@ import logging
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 from korean_ip_middleware import korean_ip_middleware
-from logging.handlers import RotatingFileHandler
+from logging.handlers import TimedRotatingFileHandler
 import os
 import time
 import psutil
@@ -19,8 +19,23 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 import aiohttp
 import urllib.parse
 import json
+import datetime
 
-# 로그 디렉토리 생성
+# 로그 디렉토리 구조 설정 (월별 폴더)
+def get_log_path():
+    """월별 폴더와 일별 로그 파일 경로를 생성합니다."""
+    today = datetime.datetime.now()
+    month_folder = today.strftime('%Y-%m')  # 2023-04 형식
+    log_folder = os.path.join('logs', month_folder)
+    
+    # 월별 폴더 생성
+    os.makedirs(log_folder, exist_ok=True)
+    
+    # 일별 로그 파일 경로
+    log_file = today.strftime('%Y-%m-%d.log')  # 2023-04-15.log 형식
+    return os.path.join(log_folder, log_file)
+
+# 기본 로그 디렉토리 생성
 os.makedirs('logs', exist_ok=True)
 
 # 로깅 설정
@@ -28,8 +43,15 @@ logging.basicConfig(
     level=logging.INFO,  # 기본 로깅 레벨
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        RotatingFileHandler('logs/app.log', maxBytes=10485760, backupCount=5),
-        logging.StreamHandler()
+        # 일별 로그 파일 핸들러
+        TimedRotatingFileHandler(
+            get_log_path(),
+            when='midnight',  # 매일 자정에 새 파일 생성
+            interval=1,       # 1일 간격
+            backupCount=30,   # 최대 30일치 보관
+            encoding='utf-8'
+        ),
+        logging.StreamHandler()  # 콘솔 출력
     ]
 )
 
@@ -39,6 +61,29 @@ db_logger.setLevel(logging.DEBUG)  # 데이터베이스 로거는 DEBUG 레벨�
 
 # 메인 로거
 logger = logging.getLogger(__name__)
+
+# 로그 핸들러 업데이트 함수
+def update_log_handlers():
+    """로그 핸들러를 현재 날짜에 맞게 업데이트합니다."""
+    root_logger = logging.getLogger()
+    
+    # 기존 파일 핸들러 제거
+    for handler in root_logger.handlers[:]:
+        if isinstance(handler, TimedRotatingFileHandler):
+            root_logger.removeHandler(handler)
+    
+    # 새 파일 핸들러 추가
+    file_handler = TimedRotatingFileHandler(
+        get_log_path(),
+        when='midnight',
+        interval=1,
+        backupCount=30,
+        encoding='utf-8'
+    )
+    file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+    root_logger.addHandler(file_handler)
+    
+    logger.info(f"로그 파일 경로 업데이트: {get_log_path()}")
 
 # 로깅 함수 정의
 def log_query_results(rows: List[Dict[str, Any]], query_name: str = "쿼리") -> None:
@@ -50,6 +95,9 @@ def log_query_results(rows: List[Dict[str, Any]], query_name: str = "쿼리") ->
         query_name: 로그에 표시할 쿼리 이름
     """
     try:
+        # 날짜가 바뀌었는지 확인하고 필요시 로그 핸들러 업데이트
+        update_log_handlers()
+        
         logger.info(f"{query_name} 결과 행 수: {len(rows)}")
         if rows:
             # 샘플 데이터 일부 로깅 (민감 정보 제외)

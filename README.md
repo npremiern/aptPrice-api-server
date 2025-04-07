@@ -79,5 +79,19 @@ pyinstaller --hidden-import=asyncpg.pgproto.pgproto --onefile --name api_server 
 - GET /bonboo/{legalCd}?spCd=1&bon=755&boo=38   법정동코드, 특수지코드, 본번, 부번
 #
 ```
+### 6️⃣ 로그
+```sh
+# 로그 파일 위치
+logs/
 
-
+# 로그 파일 이름
+logs/
+├── 2023-04/
+│   ├── 2023-04-01.log
+│   ├── 2023-04-02.log
+│   └── ...
+├── 2023-05/
+│   ├── 2023-05-01.log
+│   └── ...
+└── ...
+```

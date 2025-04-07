@@ -35,6 +35,7 @@ pip install -r requirements.txt
 ### 2️⃣ 서버 실행
 ```sh
 uvicorn main:app --reload
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 ### 3️⃣ API 호출 예시
@@ -74,6 +75,9 @@ pyinstaller --hidden-import=asyncpg.pgproto.pgproto --onefile --name api_server 
 - GET /data/sigungu/{sidoCd} 시군구 목록조회
 - GET /data/emd/{sigunguCd} 읍면동 목록조회
 - GET /data/ri/{emdCd}   동리 목록조회
+- GET /data/jibunAddr/{jibunAddr} 지번주소(PNU조회->DB조회)
+- GET /bonboo/{legalCd}?spCd=1&bon=755&boo=38   법정동코드, 특수지코드, 본번, 부번
+#
 ```
 
 

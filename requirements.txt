@@ -2,3 +2,6 @@ fastapi
 asyncpg
 python-dotenv
 uvicorn
+aiohttp
+psycopg2-binary
+sqlalchemy

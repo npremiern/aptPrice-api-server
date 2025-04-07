@@ -1,6 +1,5 @@
 # 환경 변수 및 설정 파일
 .env
-.env.*
 config.json
 *.config
 

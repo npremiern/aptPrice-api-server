@@ -13,15 +13,25 @@ api-server/
 │── auth.py            # API 키 인증 로직 (여러 개 지원)
 │── models.py          # Pydantic 데이터 모델
 │── query_loader.py    # SQL 파일 로드
+├── query_template.py  # SQL 쿼리 템플릿 처리
+├── query_loader.py    # SQL 쿼리 파일 로드
+├── query_logging_middleware.py # 쿼리 로깅 미들웨어
+├── korean_ip_middleware.py     # 한국 IP 처리 미들웨어
 │── queries.sql        # SQL 쿼리 저장 파일
 │── .env               # 환경 변수 (DB 정보, API 키 저장)
 │── requirements.txt   # 필요한 패키지 목록
 │── build_exe.bat      # EXE 파일 빌드용 배치 파일
+└── logs/
 ```
 
 ## ⚙️ 환경설정 (.env)
 ```
-DATABASE_URL=postgresql://user:password@localhost:5432/mydatabase
+DATABASE_URL=postgresql://
+DATABASE_USER="postgres"
+DATABASE_PASSWD=""
+DATABASE_HOST="127.0.0.1"
+DATABASE_PORT="5432"
+DATABASE_DB="postgres"
 API_KEYS=key1,key2,key3
 ```
 
@@ -52,13 +62,6 @@ pyinstaller --hidden-import=asyncpg.pgproto.pgproto --onefile --name api_server 
 ✅ `dist/api_server.exe` 파일이 생성되며, 이를 실행하면 API 서버가 동작합니다!
 ```sh
     .env 파일에 환경변수를 설정해야 합니다.
-        DATABASE_URL=postgresql://
-        DATABASE_USER="postgres"
-        DATABASE_PASSWD=""
-        DATABASE_HOST="127.0.0.1"
-        DATABASE_PORT="5432"
-        DATABASE_DB="postgres"
-        API_KEYS=key1,key2,key3
     queries.sql 파일이 같은폴더에 있어야합니다.
 ```
 

@@ -20,6 +20,9 @@ import aiohttp
 import urllib.parse
 import json
 import datetime
+from fastapi.responses import StreamingResponse, Response
+from io import BytesIO
+import pandas as pd
 
 # 로그 디렉토리 구조 설정 (월별 폴더)
 def get_log_path():
@@ -178,6 +181,88 @@ async def performance_middleware(request: Request, call_next):
     # 응답 헤더에 처리 시간 추가 (클라이언트에게 성능 정보 제공)
     response.headers["X-Process-Time"] = str(process_time)
     
+    return response
+
+@app.middleware("http")
+async def download_middleware(request: Request, call_next):
+    # 원래 경로 저장
+    original_path = request.url.path
+    
+    # 다운로드 접두사 확인 (/download/로 시작하는지)
+    is_download = original_path.startswith("/download/")
+    
+    if is_download:
+        # 원래 API 경로로 변환 (접두사 제거)
+        request.scope["path"] = original_path.replace("/download/", "/", 1)
+    
+    # 다운로드 요청이 아니면 일반 처리
+    if not is_download:
+        return await call_next(request)
+    
+    # 다운로드 요청인 경우 처리
+    response = await call_next(request)
+    
+    # 다운로드 요청이면 응답을 파일로 변환
+    if is_download and response.status_code == 200:
+        # 응답 본문 가져오기
+        body = b""
+        async for chunk in response.body_iterator:
+            body += chunk
+        
+        # JSON 데이터 파싱
+        try:
+            data = json.loads(body.decode('utf-8'))  # UTF-8로 명시적 디코딩
+            
+            # 데이터 추출 (대부분의 API가 'data' 키에 결과를 저장)
+            result_data = data.get('data', data)
+            
+            if isinstance(result_data, list):
+                # 파일명 생성 (경로에서 추출)
+                filename = original_path.split('/')[-1]
+                if not filename:
+                    filename = "data"
+                
+                # 파일 형식 확인 (쿼리 파라미터에서)
+                file_format = request.query_params.get('format', 'csv').lower()
+                
+                # 데이터프레임 변환
+                df = pd.DataFrame(result_data)
+                
+                # 파일 생성
+                output = BytesIO()
+                if file_format == 'excel' or file_format == 'xlsx':
+                    df.to_excel(output, index=False)
+                    media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    filename = f"{filename}.xlsx"
+                else:  # 기본값은 CSV
+                    df.to_csv(output, index=False, encoding='utf-8-sig')  # BOM 포함 UTF-8
+                    media_type = "text/csv"
+                    filename = f"{filename}.csv"
+                
+                output.seek(0)
+                
+                # 파일명 URL 인코딩 (한글 지원)
+                encoded_filename = urllib.parse.quote(filename)
+                
+                # 스트리밍 응답으로 반환 - Content-Length 헤더 없이
+                return StreamingResponse(
+                    iter([output.getvalue()]),
+                    media_type=media_type,
+                    headers={
+                        'Content-Disposition': f'attachment; filename="{encoded_filename}"; filename*=UTF-8\'\'{encoded_filename}'
+                    }
+                )
+        except Exception as e:
+            logger.error(f"파일 다운로드 변환 중 오류: {str(e)}")
+            # 오류 발생 시 새 응답 생성
+            return Response(
+                content=body,
+                status_code=response.status_code,
+                headers={k: v for k, v in response.headers.items() if k.lower() != 'content-length'},
+                media_type=response.media_type
+            )
+    
+    # 원래 응답 반환 (200이 아닌 경우)
     return response
 
 def measure_time(func):

@@ -20,9 +20,10 @@ import aiohttp
 import urllib.parse
 import json
 import datetime
-from fastapi.responses import StreamingResponse, Response
+from fastapi.responses import StreamingResponse, Response, HTMLResponse, FileResponse
 from io import BytesIO
 import pandas as pd
+from fastapi.staticfiles import StaticFiles
 
 # 로그 디렉토리 구조 설정 (월별 폴더)
 def get_log_path():
@@ -289,17 +290,19 @@ def measure_time(func):
         return result
     return wrapper
 
-'''
-@app.get("/data/{service_id}", response_model=list[ServiceData])
-async def get_service_data(service_id: str, api_key: str = Depends(verify_api_key)):
-    async with app.state.db.acquire() as conn:
-        query = queries["GET_SERVICE_DATA"]  # 파일에서 로드한 쿼리 사용
-        rows = await conn.fetch(query, service_id)
-        # 로깅 함수 호출
-        log_query_results(rows, "서비스 데이터 조회")
-        result = [ServiceData(**row) for row in rows]
-        return result
-'''
+# API 테스트 페이지 제공
+@app.get("/api-test", response_class=HTMLResponse)
+async def get_api_test_page():
+    """API 테스트 페이지를 제공합니다."""
+    try:
+        with open("api_test.html", "r", encoding="utf-8") as f:
+            html_content = f.read()
+        return HTMLResponse(content=html_content)
+    except Exception as e:
+        logger.error(f"API 테스트 페이지 로드 오류: {str(e)}")
+        return HTMLResponse(content=f"<h1>오류 발생</h1><p>{str(e)}</p>")
+
+
 @app.get("/data/bldgReg/{bldgReg}") # 건축물대장 조회
 async def get_building_data(bldgReg: str, api_key: str = Depends(verify_api_key)):
     async with app.state.db.acquire() as conn:
@@ -723,6 +726,6 @@ async def address_to_pnu(address: str, request: Request, api_key: str = Depends(
 if __name__ == "__main__":
     import uvicorn
     import os
-    host = os.getenv("HOST", "0.0.0.0")
-    port = int(os.getenv("PORT", "8000"))
+    host = os.getenv("SERVER_HOST", "0.0.0.0")
+    port = int(os.getenv("SERVER_PORT", "8000"))
     uvicorn.run(app, host=host, port=port, log_level="info")
